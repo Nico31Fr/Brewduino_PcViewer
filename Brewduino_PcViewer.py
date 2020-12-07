@@ -7,12 +7,13 @@
 ##########
 
 import serial
-import PySimpleGUI as sg
+import PySimpleGUI as Sg
 import threading
 import time
 import sys
+import os
 import glob
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, FigureCanvasAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 ###########
@@ -30,10 +31,21 @@ _GRAPHRUN_ = False
 ############
 
 
-def connect_serial_port(portname):
-    seri = serial.Serial(portname, 9600, 8)
+def connect_serial_port(portname, sg_local):
+    if sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        os.system('rfcomm connect /dev/rfcomm0 98:D3:31:F5:13:65')
+
+    try:
+        seri = serial.Serial(portname, 9600, 8)
+
+    except serial.SerialException:
+        error_message = sys.exc_info()
+        sg_local.popup_ok("\nErreur de connection au Brewduino :\n", error_message, "\n", title='erreur de connection', icon=icon, font=("Helvetica", 12))
+        return False
+
     seri.reset_input_buffer()
     return seri
+
 
 def serial_ports():
     """ Lists serial port names
@@ -117,8 +129,8 @@ def receive():
             image_cuve = 'ressources/cuvePonHon.png'
 
 
-def draw_figure(canvas, figure, loc=(0, 0)):
-    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+def draw_figure(canvas_local, figure):
+    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas_local)
     figure_canvas_agg.draw()
     figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
     return figure_canvas_agg
@@ -156,30 +168,30 @@ else:
 # GUI #
 #######
 
-sg.theme('GreenMono')  # Add a touch of color
+Sg.theme('GreenMono')  # Add a touch of color
 # All the stuff inside your window.
-layout_col1 = [[sg.Text('Temperature :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(5, 2), key='_TEMPERATURE_', justification='right'), sg.Text('°', font=("Helvetica", 16), size=(0, 2))],
-               [sg.Text('Consigne :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(5, 2), key='_SETPOINT_', justification='right'), sg.Text('°', font=("Helvetica", 16), size=(0, 2))],
-               [sg.Text('pompe :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_POMP_')],
-               [sg.Text('Heater :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_HEATER_')],
-               [sg.Text('Mode :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_MODE_')],
-               [sg.Text('Tempo :', font=("Helvetica", 16), size=(15, 2), justification='right'), sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_TEMPO_')]
+layout_col1 = [[Sg.Text('Temperature :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(5, 2), key='_TEMPERATURE_', justification='right'), Sg.Text('°', font=("Helvetica", 16), size=(0, 2))],
+               [Sg.Text('Consigne :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(5, 2), key='_SETPOINT_', justification='right'), Sg.Text('°', font=("Helvetica", 16), size=(0, 2))],
+               [Sg.Text('pompe :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_POMP_')],
+               [Sg.Text('Heater :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_HEATER_')],
+               [Sg.Text('Mode :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_MODE_')],
+               [Sg.Text('Tempo :', font=("Helvetica", 16), size=(15, 2), justification='right'), Sg.Text(' ', font=("Helvetica", 16), size=(8, 2), key='_TEMPO_')]
                ]
-layout_frame_col1 = [[sg.Frame('Infos', layout_col1, font=("Helvetica", 12), size=(120, 60))]]
+layout_frame_col1 = [[Sg.Frame('Infos', layout_col1, font=("Helvetica", 12), size=(120, 60))]]
 
-layout_col2 = [[sg.Image('ressources/cuvePoffHoff.png', key='_IMAGE_')]]
-layout_frame_col2 = [[sg.Frame('Système', layout_col2, font=("Helvetica", 12))]]
+layout_col2 = [[Sg.Image('ressources/cuvePoffHoff.png', key='_IMAGE_')]]
+layout_frame_col2 = [[Sg.Frame('Système', layout_col2, font=("Helvetica", 12))]]
 
-layout_col3 = [[sg.Canvas(key="_CANVAS_")],
-               [sg.Button(" Start ", font=("Helvetica", 12), key='_GRAPHBUTTON_'), sg.Button(" Reset ", font=("Helvetica", 12), key='_RESETBUTTON_')]]
-layout_frame_col3 = [[sg.Frame('Courbes', layout_col3, font=("Helvetica", 12), size=(120, 20))]]
+layout_col3 = [[Sg.Canvas(key="_CANVAS_")],
+               [Sg.Button(" Start ", font=("Helvetica", 12), key='_GRAPHBUTTON_'), Sg.Button(" Reset ", font=("Helvetica", 12), key='_RESETBUTTON_')]]
+layout_frame_col3 = [[Sg.Frame('Courbes', layout_col3, font=("Helvetica", 12), size=(120, 20))]]
 
-layout = [[sg.Image('ressources/bluethoot_off.png', size=(25, 25), key="_IMAGEBTCONNECT_"), sg.Text('', pad=(0, 20)), sg.Combo(serialportdispo, font=("Helvetica", 12), size=(15, 0), key="_INSERIALPORT_", tooltip='selectionner le port a utiliser', readonly=True), sg.Button("Connecter", font=("Helvetica", 12), key='_BTBUTTON_')],
-          [sg.Column(layout_frame_col1), sg.Column(layout_frame_col2), sg.Column(layout_frame_col3)],
-          [sg.Text('', pad=(360, 10)), sg.Image('Hop_BW.png'), sg.Text('V0.1', font=("Helvetica", 8), pad=((0, 0),(30, 0)))]]
+layout = [[Sg.Image('ressources/bluethoot_off.png', size=(25, 25), key="_IMAGEBTCONNECT_"), Sg.Text('', pad=(0, 20)), Sg.Combo(serialportdispo, font=("Helvetica", 12), size=(15, 0), key="_INSERIALPORT_", tooltip='selectionner le port a utiliser', readonly=True), Sg.Button("Connecter", font=("Helvetica", 12), key='_BTBUTTON_')],
+          [Sg.Column(layout_frame_col1), Sg.Column(layout_frame_col2), Sg.Column(layout_frame_col3)],
+          [Sg.Text('', pad=(360, 10)), Sg.Image('Hop_BW.png'), Sg.Text('V0.1', font=("Helvetica", 8), pad=((0, 0), (30, 0)))]]
 
 # Create the Window
-window = sg.Window('Brewduino', layout, default_element_size=(10, 1), font=('Helvetica', 25), icon=icon, finalize=True)
+window = Sg.Window('Brewduino', layout, default_element_size=(10, 1), font=('Helvetica', 25), icon=icon, finalize=True)
 
 canvas_elem = window['_CANVAS_']
 canvas = canvas_elem.TKCanvas
@@ -187,7 +199,6 @@ canvas = canvas_elem.TKCanvas
 fig = Figure(figsize=(4, 3))
 ax = fig.add_subplot(111)
 ax.set_ylabel("température")
-#ax.grid()
 ax.set_xticks([])
 ax.locator_params(nbins=4)
 fig_agg = draw_figure(canvas, fig)
@@ -199,14 +210,15 @@ fig_agg = draw_figure(canvas, fig)
 while True:
     event, values = window.read(timeout=1000)
 
-    if event == sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
+    if event == Sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
         break
     elif event == "_BTBUTTON_":
-        ser = connect_serial_port(values['_INSERIALPORT_'])
-        decoderthread = threading.Thread(target=receive, daemon=True)
-        window['_IMAGEBTCONNECT_'].update('ressources/bluethoot_on.png')
-        window['_BTBUTTON_'].update(disabled=True)
-        decoderthread.start()
+        ser = connect_serial_port(values['_INSERIALPORT_'], Sg)
+        if ser:
+            decoderthread = threading.Thread(target=receive, daemon=True)
+            window['_IMAGEBTCONNECT_'].update('ressources/bluethoot_on.png')
+            window['_BTBUTTON_'].update(disabled=True)
+            decoderthread.start()
     elif event == "_GRAPHBUTTON_":
         _GRAPHRUN_ = True
         window['_GRAPHBUTTON_'].update(disabled=True)
@@ -222,12 +234,11 @@ while True:
     window['_MODE_'].update(mode)
     window['_TEMPO_'].update(tempo)
     window['_IMAGE_'].update(image_cuve)
-    if _GRAPHRUN_ == True:
+    if _GRAPHRUN_:
         x.append(time.strftime('%H:%M:%S', time.gmtime()))
         y.append(float(tempe.replace(',', '.')))
         ysp.append(float(setpont.replace(',', '.')))
         ax.cla()  # clear the subplot
-        # ax.grid()  # draw the grid
         ax.plot(x, y, color='purple', label='temperature cuve')
         ax.plot(x, ysp, color='red', label='consigne')
         ax.legend()
