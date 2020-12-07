@@ -176,7 +176,7 @@ layout_frame_col3 = [[sg.Frame('Courbes', layout_col3, font=("Helvetica", 12), s
 
 layout = [[sg.Image('ressources/bluethoot_off.png', size=(25, 25), key="_IMAGEBTCONNECT_"), sg.Text('', pad=(0, 20)), sg.Combo(serialportdispo, font=("Helvetica", 12), size=(15, 0), key="_INSERIALPORT_", tooltip='selectionner le port a utiliser', readonly=True), sg.Button("Connecter", font=("Helvetica", 12), key='_BTBUTTON_')],
           [sg.Column(layout_frame_col1), sg.Column(layout_frame_col2), sg.Column(layout_frame_col3)],
-          [sg.Text('', pad=(360, 10)), sg.Image('Hop_BW.png')]]
+          [sg.Text('', pad=(360, 10)), sg.Image('Hop_BW.png'), sg.Text('V0.1', font=("Helvetica", 8), pad=((0, 0),(30, 0)))]]
 
 # Create the Window
 window = sg.Window('Brewduino', layout, default_element_size=(10, 1), font=('Helvetica', 25), icon=icon, finalize=True)
@@ -236,5 +236,4 @@ while True:
 
 # fermeture
 window.close()
-ser.close()
 _RUN_ = False
