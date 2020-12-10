@@ -32,9 +32,6 @@ _GRAPHRUN_ = False
 
 
 def connect_serial_port(portname, sg_local):
-    if sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        os.system('rfcomm connect /dev/rfcomm0 98:D3:31:F5:13:65')
-
     try:
         seri = serial.Serial(portname, 9600, 8)
 
@@ -90,7 +87,7 @@ def receive():
     ser.reset_input_buffer()
     print("start threat")
     while _RUN_:
-        time.sleep(1)
+        time.sleep(0.1)
         buffer = str(ser.readline())
         buffer = buffer[0:buffer.rfind('|')]
         rx_buffer = buffer.split('|')
